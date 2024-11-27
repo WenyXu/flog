@@ -26,6 +26,7 @@ Options:
                            - rfc3164
                            - rfc5424
                            - json
+						   - csv
   -o, --output string      output filename. Path-like is allowed. (default "generated.log")
   -t, --type string        log output type. available types:
                            - stdout (default)
@@ -43,23 +44,29 @@ Options:
                            with "byte" option, the logs will be split whenever the maximum size in bytes is reached.
   -w, --overwrite          overwrite the existing log files.
   -l, --loop               loop output forever until killed.
+  -S, --seed integer       set the seed for random number generator.
+  -i, --interval integer   fix creation time interval for each log (default unit "seconds").
+  -N, --noise integer      noise for timestamp (default unit "seconds").
 `
 
-var validFormats = []string{"apache_common", "apache_combined", "apache_error", "rfc3164", "rfc5424", "common_log", "json"}
+var validFormats = []string{"apache_common", "apache_combined", "apache_error", "rfc3164", "rfc5424", "common_log", "json", "csv"}
 var validTypes = []string{"stdout", "log", "gz"}
 
 // Option defines log generator options
 type Option struct {
-	Format    string
-	Output    string
-	Type      string
-	Number    int
-	Bytes     int
-	Sleep     time.Duration
-	Delay     time.Duration
-	SplitBy   int
-	Overwrite bool
-	Forever   bool
+	Format         string
+	Output         string
+	Type           string
+	Number         int
+	Bytes          int
+	Sleep          time.Duration
+	Delay          time.Duration
+	SplitBy        int
+	Overwrite      bool
+	Forever        bool
+	Seed           uint64
+	Interval       uint64
+	TimestampNoise uint64
 }
 
 func init() {
@@ -81,16 +88,18 @@ func errorExit(err error) {
 
 func defaultOptions() *Option {
 	return &Option{
-		Format:    "apache_common",
-		Output:    "generated.log",
-		Type:      "stdout",
-		Number:    1000,
-		Bytes:     0,
-		Sleep:     0.0,
-		Delay:     0.0,
-		SplitBy:   0,
-		Overwrite: false,
-		Forever:   false,
+		Format:         "apache_common",
+		Output:         "generated.log",
+		Type:           "stdout",
+		Number:         1000,
+		Bytes:          0,
+		Sleep:          0.0,
+		Delay:          0.0,
+		SplitBy:        0,
+		Overwrite:      false,
+		Forever:        false,
+		Interval:       10,
+		TimestampNoise: 15,
 	}
 }
 
@@ -182,7 +191,9 @@ func ParseOptions() *Option {
 	splitBy := pflag.IntP("split", "p", opts.SplitBy, "Maximum number of lines or size of a log file")
 	overwrite := pflag.BoolP("overwrite", "w", false, "Overwrite the existing log files")
 	forever := pflag.BoolP("loop", "l", false, "Loop output forever until killed")
-
+	seed := pflag.Uint64P("seed", "S", 0, "Set the seed for random number generator")
+	interval := pflag.Uint64P("interval", "i", opts.Interval, "Fix creation time interval for each log (default unit: seconds)")
+	noise := pflag.Uint64P("noise", "N", opts.TimestampNoise, "Noise for timestamp (default unit: seconds)")
 	pflag.Parse()
 
 	if *help {
@@ -217,5 +228,8 @@ func ParseOptions() *Option {
 	opts.Output = *output
 	opts.Overwrite = *overwrite
 	opts.Forever = *forever
+	opts.Seed = *seed
+	opts.Interval = *interval
+	opts.TimestampNoise = *noise
 	return opts
 }

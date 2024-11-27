@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/brianvoe/gofakeit"
+	"github.com/brianvoe/gofakeit/v7"
 )
 
 const (
@@ -23,6 +23,9 @@ const (
 	CommonLogFormat = "%s - %s [%s] \"%s %s %s\" %d %d"
 	// JSONLogFormat : {"host": "{host}", "user-identifier": "{user-identifier}", "datetime": "{datetime}", "method": "{method}", "request": "{request}", "protocol": "{protocol}", "status", {status}, "bytes": {bytes}, "referer": "{referer}"}
 	JSONLogFormat = `{"host":"%s", "user-identifier":"%s", "datetime":"%s", "method": "%s", "request": "%s", "protocol":"%s", "status":%d, "bytes":%d, "referer": "%s"}`
+	// CSVLogFormat : {host},{user-identifier},{datetime},{method},{request},{protocol},{status},{bytes},{referer}
+	CSVLogFormat = `"%s","%s","%s","%s","%s","%s",%d,%d,"%s","%s"`
+	CSVLogHeader = `"host","user-identifier","datetime","method","request","protocol","status","bytes","referer","user-agent"`
 )
 
 // NewApacheCommonLog creates a log string with apache common log format
@@ -35,7 +38,7 @@ func NewApacheCommonLog(t time.Time) string {
 		gofakeit.HTTPMethod(),
 		RandResourceURI(),
 		RandHTTPVersion(),
-		gofakeit.StatusCode(),
+		gofakeit.HTTPStatusCode(),
 		gofakeit.Number(0, 30000),
 	)
 }
@@ -50,7 +53,7 @@ func NewApacheCombinedLog(t time.Time) string {
 		gofakeit.HTTPMethod(),
 		RandResourceURI(),
 		RandHTTPVersion(),
-		gofakeit.StatusCode(),
+		gofakeit.HTTPStatusCode(),
 		gofakeit.Number(30, 100000),
 		gofakeit.URL(),
 		gofakeit.UserAgent(),
@@ -111,7 +114,7 @@ func NewCommonLogFormat(t time.Time) string {
 		gofakeit.HTTPMethod(),
 		RandResourceURI(),
 		RandHTTPVersion(),
-		gofakeit.StatusCode(),
+		gofakeit.HTTPStatusCode(),
 		gofakeit.Number(0, 30000),
 	)
 }
@@ -126,8 +129,24 @@ func NewJSONLogFormat(t time.Time) string {
 		gofakeit.HTTPMethod(),
 		RandResourceURI(),
 		RandHTTPVersion(),
-		gofakeit.StatusCode(),
+		gofakeit.HTTPStatusCode(),
 		gofakeit.Number(0, 30000),
 		gofakeit.URL(),
+	)
+}
+
+func NewCSVLogFormat(t time.Time) string {
+	return fmt.Sprintf(
+		CSVLogFormat,
+		gofakeit.IPv4Address(),
+		RandAuthUserID(),
+		t.Format(CSV),
+		gofakeit.HTTPMethod(),
+		RandResourceURI(),
+		RandHTTPVersion(),
+		gofakeit.HTTPStatusCode(),
+		gofakeit.Number(0, 30000),
+		gofakeit.URL(),
+		gofakeit.UserAgent(),
 	)
 }

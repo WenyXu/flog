@@ -9,13 +9,31 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/brianvoe/gofakeit/v7"
 )
+
+type TimestampGenerator struct {
+	created  time.Time
+	interval time.Duration
+	noise    time.Duration
+}
+
+func (tg *TimestampGenerator) Next() time.Time {
+	time := tg.created.Add(tg.interval + time.Duration(gofakeit.Number(0, int(tg.noise))))
+	tg.created = time
+	return time
+}
 
 // Generate generates the logs with given options
 func Generate(option *Option) error {
 	var (
 		splitCount = 1
-		created    = time.Now()
+		timestamp  = &TimestampGenerator{
+			created:  gofakeit.Date(),
+			interval: time.Second * time.Duration(option.Interval),
+			noise:    time.Second * time.Duration(option.TimestampNoise),
+		}
 
 		interval time.Duration
 		delay    time.Duration
@@ -25,9 +43,6 @@ func Generate(option *Option) error {
 		interval = option.Delay
 		delay = interval
 	}
-	if option.Sleep > 0 {
-		interval = option.Sleep
-	}
 
 	logFileName := option.Output
 	writer, err := NewWriter(option.Type, logFileName)
@@ -35,12 +50,16 @@ func Generate(option *Option) error {
 		return err
 	}
 
+	log := NewLogHeader(option.Format)
+	if log != "" {
+		_, _ = writer.Write([]byte(log + "\n"))
+	}
+
 	if option.Forever {
 		for {
 			time.Sleep(delay)
-			log := NewLog(option.Format, created)
+			log := NewLog(option.Format, timestamp.Next())
 			_, _ = writer.Write([]byte(log + "\n"))
-			created = created.Add(interval)
 		}
 	}
 
@@ -48,7 +67,7 @@ func Generate(option *Option) error {
 		// Generates the logs until the certain number of lines is reached
 		for line := 0; line < option.Number; line++ {
 			time.Sleep(delay)
-			log := NewLog(option.Format, created)
+			log := NewLog(option.Format, timestamp.Next())
 			_, _ = writer.Write([]byte(log + "\n"))
 
 			if (option.Type != "stdout") && (option.SplitBy > 0) && (line > option.SplitBy*splitCount) {
@@ -60,14 +79,13 @@ func Generate(option *Option) error {
 
 				splitCount++
 			}
-			created = created.Add(interval)
 		}
 	} else {
 		// Generates the logs until the certain size in bytes is reached
 		bytes := 0
 		for bytes < option.Bytes {
 			time.Sleep(delay)
-			log := NewLog(option.Format, created)
+			log := NewLog(option.Format, timestamp.Next())
 			_, _ = writer.Write([]byte(log + "\n"))
 
 			bytes += len(log)
@@ -80,7 +98,6 @@ func Generate(option *Option) error {
 
 				splitCount++
 			}
-			created = created.Add(interval)
 		}
 	}
 
@@ -113,6 +130,16 @@ func NewWriter(logType string, logFileName string) (io.WriteCloser, error) {
 	}
 }
 
+// NewLogHeader creates a log header for given format
+func NewLogHeader(format string) string {
+	switch format {
+	case "csv":
+		return CSVLogHeader
+	default:
+		return ""
+	}
+}
+
 // NewLog creates a log for given format
 func NewLog(format string, t time.Time) string {
 	switch format {
@@ -130,6 +157,8 @@ func NewLog(format string, t time.Time) string {
 		return NewCommonLogFormat(t)
 	case "json":
 		return NewJSONLogFormat(t)
+	case "csv":
+		return NewCSVLogFormat(t)
 	default:
 		return ""
 	}

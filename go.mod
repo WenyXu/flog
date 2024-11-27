@@ -1,6 +1,8 @@
 module github.com/mingrammer/flog
 
-go 1.20
+go 1.22
+
+toolchain go1.22.2
 
 require (
 	bou.ke/monkey v1.0.2
@@ -11,6 +13,7 @@ require (
 )
 
 require (
+	github.com/brianvoe/gofakeit/v7 v7.1.2
 	github.com/davecgh/go-spew v1.1.0 // indirect
 	github.com/fatih/color v1.6.0 // indirect
 	github.com/mattn/go-colorable v0.0.9 // indirect

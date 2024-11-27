@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
-	"math/rand"
+
+	"github.com/brianvoe/gofakeit/v7"
 )
 
 func ExampleRandResourceURI() {
-	rand.Seed(11)
+	gofakeit.GlobalFaker = gofakeit.New(11)
 	fmt.Print(RandResourceURI())
-	// Output: /target
+	// Output: /infrastructures
 }
